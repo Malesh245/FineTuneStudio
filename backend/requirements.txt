@@ -1,0 +1,47 @@
+# FineTuneStudio Backend - Python Dependencies
+# Generated with: pip freeze (Python 3.14.3)
+
+# === Core API ===
+fastapi==0.136.1
+uvicorn==0.46.0
+starlette==1.0.0
+python-multipart==0.0.27
+aiofiles==25.1.0
+
+# === Database (Async MongoDB) ===
+motor==3.7.1
+pymongo==4.17.0
+dnspython==2.8.0
+
+# === Authentication ===
+python-jose==3.5.0
+passlib==1.7.4
+bcrypt==4.0.1
+cryptography==47.0.0
+pydantic==2.13.3
+email-validator==2.3.0
+
+# === Data Processing ===
+pandas==3.0.2
+numpy==2.4.4
+
+# === Hugging Face Integration ===
+huggingface_hub==1.13.0
+
+# === ML / AI (install when GPU available) ===
+# pip install transformers torch peft datasets scikit-learn
+# pip install kaggle  # for Kaggle dataset import
+
+# === Supporting ===
+anyio==4.13.0
+click==8.3.3
+colorama==0.4.6
+h11==0.16.0
+httpcore==1.0.9
+httptools==0.7.1
+httpx==0.28.1
+tqdm==4.67.3
+typing_extensions==4.15.0
+watchfiles==1.1.1
+websockets==16.0
+PyYAML==6.0.3

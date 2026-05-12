@@ -8,6 +8,7 @@ from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
 
 from app.models.schemas import HFImportRequest, KaggleImportRequest, CleanRequest
 from app.services.cleaner import analyze_dataset, apply_cleaning
+from app.services.multiplier import DataMultiplier
 from app.utils.hf_connector import fetch_hf_dataset
 from app.utils.kaggle_connector import fetch_kaggle_dataset
 from app.auth import get_optional_user
@@ -174,6 +175,38 @@ async def delete_dataset(dataset_id: str):
 
     await db.datasets.delete_one({"_id": ObjectId(dataset_id)})
     return {"message": "Dataset deleted successfully"}
+
+
+@router.post("/multiply")
+async def multiply_dataset(req: dict, user=Depends(get_optional_user)):
+    """Multiply a dataset using synthetic data generation."""
+    dataset_id = req.get("dataset_id")
+    target_count = req.get("target_count", 100)
+    
+    db = get_db()
+    dataset = await db.datasets.find_one({"_id": ObjectId(dataset_id)})
+    if not dataset:
+        raise HTTPException(status_code=404, detail="Dataset not found")
+
+    file_path = dataset.get("file_path")
+    if not file_path or not Path(file_path).exists():
+        raise HTTPException(status_code=400, detail="Dataset file not found on disk")
+
+    result = DataMultiplier.generate_synthetic_data(file_path, target_count)
+    
+    if "error" in result:
+        raise HTTPException(status_code=400, detail=result["error"])
+
+    # Update DB with multiplied data
+    update_doc = {
+        "preview_data": result.get("preview", []),
+        "row_count": result.get("new_count"),
+        "status": "multiplied",
+        "file_path": result.get("multiplied_file")
+    }
+    await db.datasets.update_one({"_id": ObjectId(dataset_id)}, {"$set": update_doc})
+    
+    return result
 
 
 @router.get("/")

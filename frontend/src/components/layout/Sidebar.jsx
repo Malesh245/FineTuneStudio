@@ -1,7 +1,8 @@
 import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard, Database, Cpu, GitCompare,
-  BarChart3, Rocket, Settings, Zap, LogOut
+  BarChart3, Rocket, Settings, Zap, LogOut, BookOpen, Merge, PenTool, MessageCircle, FlaskConical, Shrink,
+  Bot, Store, Shield, Image
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -9,11 +10,23 @@ const navItems = [
   { label: 'PIPELINE', items: [
     { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
     { path: '/datasets', icon: Database, label: 'Datasets' },
+    { path: '/builder', icon: PenTool, label: 'Dataset Builder' },
     { path: '/training', icon: Cpu, label: 'Training' },
+    { path: '/experiments', icon: FlaskConical, label: 'Experiments' },
   ]},
   { label: 'ANALYSIS', items: [
     { path: '/comparison', icon: GitCompare, label: 'Comparison' },
     { path: '/visualize', icon: BarChart3, label: 'Visualization' },
+    { path: '/recipes', icon: BookOpen, label: 'Recipe Hub' },
+    { path: '/fusion', icon: Merge, label: 'Fusion Lab' },
+    { path: '/playground', icon: MessageCircle, label: 'Playground' },
+    { path: '/distillation', icon: Shrink, label: 'Distillation' },
+    { path: '/agents', icon: Bot, label: 'Agent Training' },
+    { path: '/multimodal', icon: Image, label: 'Multi-Modal' },
+  ]},
+  { label: 'ECOSYSTEM', items: [
+    { path: '/marketplace', icon: Store, label: 'Marketplace' },
+    { path: '/local', icon: Shield, label: 'Privacy Mode' },
   ]},
   { label: 'SHIP', items: [
     { path: '/deploy', icon: Rocket, label: 'Deploy' },

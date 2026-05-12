@@ -5,6 +5,9 @@ from fastapi import APIRouter, Depends
 
 from app.models.schemas import TrainingConfig
 from app.services.trainer import run_finetuning
+from app.services.quantizer import ModelQuantizer
+from app.services.notebook_gen import NotebookGenerator
+from app.services.copilot import TrainingCopilot
 from app.auth import get_optional_user
 from app.database import get_db
 
@@ -103,3 +106,36 @@ async def get_job(job_id: str):
 
     job["id"] = str(job.pop("_id"))
     return job
+
+
+@router.post("/quantize")
+async def quantize_model(req: dict, user=Depends(get_optional_user)):
+    """Shrink a model using quantization."""
+    model_id = req.get("model_id")
+    format = req.get("format", "4bit")
+    
+    # In a real app, we'd lookup the model path in the DB
+    result = ModelQuantizer.quantize_model(model_id, format)
+    return result
+
+
+@router.get("/export-notebook")
+async def export_notebook(model_name: str = "distilgpt2", epochs: int = 3, lr: float = 2e-4):
+    """Generate and return a pre-filled Jupyter notebook."""
+    content = NotebookGenerator.generate_colab_notebook({
+        "model_name": model_name,
+        "epochs": epochs,
+        "learning_rate": lr
+    })
+    return {"notebook": content}
+
+
+@router.post("/copilot/recommend")
+async def copilot_recommend(req: dict, user=Depends(get_optional_user)):
+    """AI Copilot: recommend optimal hyperparameters."""
+    model_name = req.get("model_name", "distilgpt2")
+    dataset_rows = req.get("dataset_rows", 100)
+    domain = req.get("domain", "general")
+    
+    result = TrainingCopilot.recommend(model_name, dataset_rows, domain)
+    return result

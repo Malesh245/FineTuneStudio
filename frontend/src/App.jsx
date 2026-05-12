@@ -10,6 +10,16 @@ import DeployPage from './pages/DeployPage';
 import SettingsPage from './pages/SettingsPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import RecipeHubPage from './pages/RecipeHubPage';
+import FusionLabPage from './pages/FusionLabPage';
+import DatasetBuilderPage from './pages/DatasetBuilderPage';
+import PlaygroundPage from './pages/PlaygroundPage';
+import ExperimentsPage from './pages/ExperimentsPage';
+import DistillationPage from './pages/DistillationPage';
+import AgentTrainingPage from './pages/AgentTrainingPage';
+import MarketplacePage from './pages/MarketplacePage';
+import LocalModePage from './pages/LocalModePage';
+import MultiModalPage from './pages/MultiModalPage';
 
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
@@ -41,6 +51,16 @@ export default function App() {
             <Route path="/visualize" element={<VisualizationPage />} />
             <Route path="/deploy" element={<DeployPage />} />
             <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/recipes" element={<RecipeHubPage />} />
+            <Route path="/fusion" element={<FusionLabPage />} />
+            <Route path="/builder" element={<DatasetBuilderPage />} />
+            <Route path="/playground" element={<PlaygroundPage />} />
+            <Route path="/experiments" element={<ExperimentsPage />} />
+            <Route path="/distillation" element={<DistillationPage />} />
+            <Route path="/agents" element={<AgentTrainingPage />} />
+            <Route path="/marketplace" element={<MarketplacePage />} />
+            <Route path="/local" element={<LocalModePage />} />
+            <Route path="/multimodal" element={<MultiModalPage />} />
           </Route>
         </Routes>
       </BrowserRouter>

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import {
   Cpu, Play, Square, Settings2, Loader2, CheckCircle2,
-  ChevronDown, Zap, Clock, TrendingDown, Server, Cloud, Lock
+  ChevronDown, Zap, Clock, TrendingDown, Server, Cloud, Lock, Sparkles
 } from 'lucide-react';
 
 const MODELS = [
@@ -45,6 +45,10 @@ export default function TrainingPage() {
   const [gpuProvider, setGpuProvider] = useState('local');
   const [datasets, setDatasets] = useState([]);
   const [selectedDataset, setSelectedDataset] = useState('');
+  const [isQuantizing, setIsQuantizing] = useState(false);
+  const [quantResult, setQuantResult] = useState(null);
+  const [copilotResult, setCopilotResult] = useState(null);
+  const [copilotLoading, setCopilotLoading] = useState(false);
   const { token } = useAuth();
 
   useEffect(() => {
@@ -136,8 +140,70 @@ export default function TrainingPage() {
     }
   };
 
+  const handleQuantize = async (format) => {
+    setIsQuantizing(true);
+    setQuantResult(null);
+    try {
+      const res = await fetch('http://localhost:8000/api/training/quantize', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}` 
+        },
+        body: JSON.stringify({ model_id: 'current', format }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setQuantResult(data);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsQuantizing(false);
+    }
+  };
+
+  const handleExportNotebook = async () => {
+    try {
+      const res = await fetch(`http://localhost:8000/api/training/export-notebook?model_name=${selectedModel.id}&epochs=${config.epochs}&lr=${config.learningRate}`);
+      if (res.ok) {
+        const { notebook } = await res.json();
+        const blob = new Blob([notebook], { type: 'application/x-ipynb+json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `FineTuneStudio_${selectedModel.name.replace(/ /g, '_')}.ipynb`;
+        a.click();
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const updateConfig = (key, value) => {
     setConfig({ ...config, [key]: value });
+  };
+
+  const handleCopilot = async () => {
+    setCopilotLoading(true);
+    try {
+      const ds = datasets.find(d => d.id === selectedDataset);
+      const res = await fetch('http://localhost:8000/api/training/copilot/recommend', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          model_name: selectedModel.id,
+          dataset_rows: ds?.row_count || 100,
+          domain: 'general'
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setConfig(data.config);
+        setCopilotResult(data);
+      }
+    } catch (err) { console.error(err); }
+    finally { setCopilotLoading(false); }
   };
 
   return (
@@ -277,7 +343,12 @@ export default function TrainingPage() {
                 <span style={{ fontWeight: 700, color: 'var(--success)', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
                    <Zap size={12} /> Google Colab Integration
                 </span>
-                Colab doesn't need your token upfront. When you start, we'll provide a 1-click script that reads your HF Token from Colab's <b>Secrets</b> (the key icon) for secure uploads.
+                <p style={{ marginBottom: 12 }}>
+                  Colab doesn't need your token upfront. When you start, we'll provide a 1-click script that reads your HF Token from Colab's <b>Secrets</b> (the key icon) for secure uploads.
+                </p>
+                <button className="btn btn-sm btn-success w-full" onClick={handleExportNotebook}>
+                  <Cloud size={14} /> Export Prepared Notebook (.ipynb)
+                </button>
               </div>
             )}
           </div>
@@ -289,7 +360,39 @@ export default function TrainingPage() {
               <div className="card-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Settings2 size={16} /> Hyperparameters
               </div>
+              <button className="btn btn-sm btn-primary" onClick={handleCopilot} disabled={copilotLoading}
+                style={{ background: 'linear-gradient(135deg, #6366f1, #a855f7)', border: 'none' }}>
+                {copilotLoading ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />}
+                {copilotLoading ? 'Analyzing...' : 'AI Copilot'}
+              </button>
             </div>
+
+            {copilotResult && (
+              <div className="animate-fade" style={{ 
+                margin: '0 0 16px', padding: 14, borderRadius: 'var(--radius-md)',
+                background: 'linear-gradient(135deg, rgba(99,102,241,0.06), rgba(168,85,247,0.06))',
+                border: '1px solid rgba(99,102,241,0.15)'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent)' }}>
+                    ✨ AI Copilot Recommendation
+                  </span>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <span className="badge badge-purple">Confidence: {copilotResult.confidence}%</span>
+                    <span className={`badge ${copilotResult.overfitRisk === 'Low' ? 'badge-success' : copilotResult.overfitRisk === 'Medium' ? 'badge-warning' : 'badge-danger'}`}>
+                      Overfit Risk: {copilotResult.overfitRisk}
+                    </span>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {copilotResult.reasons?.map((r, i) => (
+                    <div key={i} style={{ fontSize: 11.5, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                      <b style={{ color: 'var(--text-primary)' }}>{r.param}={String(r.value)}</b> — {r.reason}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div className="form-group">
                 <label className="form-label">Select Dataset</label>
@@ -383,6 +486,52 @@ export default function TrainingPage() {
               <div>
                 <div className="stat-value" style={{ fontSize: 22 }}>30s</div>
                 <div className="stat-label">Training Time</div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Quantization Studio */}
+        {status === 'done' && (
+          <div className="card mt-6 animate-fade" style={{ marginTop: 24 }}>
+            <div className="card-header">
+              <div className="card-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Zap size={16} color="var(--accent)" /> Quantization Studio
+              </div>
+              <span className="badge badge-purple">Advanced</span>
+            </div>
+            
+            <div className="grid-2" style={{ gap: 24 }}>
+              <div>
+                <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 16 }}>
+                  Shrink your fine-tuned model to run on laptops, mobile phones, or edge devices.
+                </p>
+                <div style={{ display: 'flex', gap: 12 }}>
+                  <button className="btn btn-secondary flex-1" onClick={() => handleQuantize('4bit')} disabled={isQuantizing}>
+                    {isQuantizing ? 'Processing...' : 'Shrink to 4-bit (Smallest)'}
+                  </button>
+                  <button className="btn btn-secondary flex-1" onClick={() => handleQuantize('8bit')} disabled={isQuantizing}>
+                    {isQuantizing ? 'Processing...' : 'Shrink to 8-bit (Balanced)'}
+                  </button>
+                </div>
+              </div>
+              
+              <div style={{ background: 'var(--bg-tertiary)', borderRadius: 'var(--radius-md)', padding: 16, border: '1px solid var(--border)' }}>
+                {quantResult ? (
+                  <div className="animate-fade">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
+                      <span style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>Optimized Size:</span>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--success)' }}>{quantResult.shrunk_size_gb} GB</span>
+                    </div>
+                    <div className="console" style={{ maxHeight: 120, fontSize: 11 }}>
+                      {quantResult.steps.map((s, i) => <div key={i} className="console-line info">{s}</div>)}
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-tertiary)', fontSize: 12, fontStyle: 'italic' }}>
+                    Select a format to start shrinking
+                  </div>
+                )}
               </div>
             </div>
           </div>

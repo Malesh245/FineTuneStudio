@@ -41,6 +41,7 @@ export default function DatasetPage() {
   const [dataset, setDataset] = useState(null);
   const [qualityScore, setQualityScore] = useState(0);
   const [cleaningApplied, setCleaningApplied] = useState([]);
+  const [targetCount, setTargetCount] = useState(100);
   const [hfUrl, setHfUrl] = useState('');
   const [kaggleUrl, setKaggleUrl] = useState('');
   const [allDatasets, setAllDatasets] = useState([]);
@@ -171,6 +172,32 @@ export default function DatasetPage() {
       }
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  const handleMultiply = async () => {
+    if (!dataset) return;
+    setLoading(true);
+    try {
+      const res = await fetch('http://localhost:8000/api/datasets/multiply', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}` 
+        },
+        body: JSON.stringify({ 
+          dataset_id: dataset.id,
+          target_count: targetCount
+        }),
+      });
+      if (res.ok) {
+        await fetchDatasets();
+        alert('Dataset multiplied successfully! Check the library for the updated row count.');
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -423,7 +450,27 @@ export default function DatasetPage() {
                       </button>
                     </div>
                   </div>
-                  
+                  {/* Dataset Multiplier */}
+                  <div className="card">
+                    <div className="card-title" style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <Sparkles size={16} color="var(--accent)" /> Dataset Multiplier
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                      <div style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>
+                        Turn your small dataset into a large one using AI synthetic data generation.
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label" style={{ fontSize: 11 }}>Target Row Count</label>
+                        <input type="number" className="form-input" 
+                          value={targetCount} onChange={e => setTargetCount(parseInt(e.target.value) || 0)}
+                          min={dataset?.totalRows || 0} max={5000} />
+                      </div>
+                      <button className="btn btn-primary w-full" onClick={handleMultiply} disabled={loading || !dataset}>
+                        {loading ? 'Generating...' : 'Start Multiplication'}
+                      </button>
+                    </div>
+                  </div>
+
                   <div className="card" style={{ textAlign: 'center' }}>
                     <div className="card-title" style={{ marginBottom: 16 }}>Quality Score</div>
                     <QualityGauge score={qualityScore} />

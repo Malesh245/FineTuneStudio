@@ -30,12 +30,14 @@ FineTuneStudio is an all-in-one open-source studio designed to democratize AI fi
 - MongoDB (Running locally or on Atlas)
 
 ### 1. Clone the Repository
+
 ```bash
-git clone https://github.com/maleshkumar/FineTuneStudio.git
+git clone https://github.com/Malesh245/FineTuneStudio.git
 cd FineTuneStudio
 ```
 
 ### 2. Backend Setup
+
 ```bash
 cd backend
 python -m venv venv
@@ -45,6 +47,7 @@ uvicorn app.main:app --reload --port 8000
 ```
 
 ### 3. Frontend Setup
+
 ```bash
 cd ../frontend
 npm install
@@ -69,4 +72,5 @@ Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for gui
 FineTuneStudio is released under the [MIT License](LICENSE).
 
 ---
+
 Built with ❤️ by [Malesh Kumar](https://github.com/maleshkumar)
